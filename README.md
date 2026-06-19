@@ -1,16 +1,189 @@
-# React + Vite
+# Furniture ERP Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern Furniture ERP Frontend built with React, Vite, Tailwind CSS, and Axios.
 
-Currently, two official plugins are available:
+This application helps furniture manufacturers manage workers, production, inventory, payments, shipments, showroom dispatches, and business reports through a responsive web dashboard.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Live Demo
 
-## React Compiler
+Frontend:
+https://furniture-erp-frontend.vercel.app
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Backend API:
+https://furniture-erp-backend.onrender.com
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Authentication & Security
+
+* JWT Authentication
+* Secure Login System
+* Role-Based Access (Admin / Viewer)
+* Automatic Session Expiry Handling
+
+### Dashboard
+
+* Today's Production Summary
+* Worker Statistics
+* Shipment Overview
+* Inventory Summary
+* Most Shipped Products
+* Business Insights
+
+### Worker Management
+
+* Add Workers
+* View Worker Details
+* Worker Statements
+* Worker Summary Reports
+* Earnings Tracking
+
+### Production Management
+
+* Create Work Entries
+* Quantity Tracking
+* Carpenter & Polisher Workflow
+* Ready Stock Management
+* Production Reports
+
+### Inventory Management
+
+* Categories Management
+* Product Design Management
+* Rate Type Management
+* Product Rate Configuration
+
+### Payment Management
+
+* Record Worker Payments
+* Payment History
+* Outstanding Balance Tracking
+* Payment Summary Reports
+
+### Shipment Management
+
+* Showroom Management
+* Shipment Creation
+* Detailed Shipment History
+* Showroom Shipment Reports
+
+### Reports
+
+* Production Report
+* Worker Statements
+* Worker Summary
+* Payment Summary
+* Shipment Reports
+* Showroom Shipment History
+
+### User Experience
+
+* Responsive Design
+* Mobile Friendly Layout
+* Search & Filtering
+* Real-time Notifications
+* Loading Indicators
+* Error Handling
+
+## Tech Stack
+
+### Frontend
+
+* React.js
+* Vite
+* JavaScript (ES6+)
+* Axios
+* Tailwind CSS
+
+### Backend Integration
+
+* Spring Boot REST APIs
+* JWT Authentication
+* PostgreSQL Database
+
+### Deployment
+
+* Vercel (Frontend)
+* Render (Backend)
+* Neon PostgreSQL (Database)
+
+## Project Structure
+
+src
+
+├── api
+
+├── components
+
+├── layouts
+
+├── pages
+
+├── routes
+
+├── utils
+
+└── assets
+
+## Main Modules
+
+### Master Data
+
+* Categories
+* Designs
+* Rate Types
+* Product Rates
+
+### Operations
+
+* Workers
+* Work Entries
+* Payments
+* Ready Stock
+* Shipments
+* Showrooms
+
+### Reports
+
+* Production Report
+* Worker Statements
+* Worker Summary
+* Payment Summary
+* Shipment Report
+* Showroom Shipment History
+
+## Deployment Architecture
+
+React Frontend (Vercel)
+
+↓
+
+Spring Boot Backend (Render)
+
+↓
+
+PostgreSQL Database (Neon)
+
+## Future Enhancements
+
+* Excel Export
+* PDF Reports
+* Advanced Dashboard Analytics
+* Dark Mode
+* Audit Logs
+* Email Notifications
+* Mobile App
+
+## Author
+
+Kuldeep Singh S
+
+BE Information Science & Engineering
+
+Java Full Stack Developer
+
+LinkedIn:
+https://www.linkedin.com/in/kuldeep-singh-s-261182327/
+
+GitHub:
+https://github.com/Kuldeepsinghs
