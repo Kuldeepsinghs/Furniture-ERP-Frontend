@@ -89,6 +89,12 @@ export const getUpdatedDateTime = (record) =>
   record?.createdAt ??
   record?.date;
 
+export const getSaleDateTime = (sale) =>
+  sale?.saleDateTime ??
+  sale?.createdAt ??
+  sale?.updatedAt ??
+  sale?.date;
+
 export const getShipmentItems = (shipment) =>
   asArray(shipment?.items ?? shipment?.shipmentItems ?? shipment?.products);
 

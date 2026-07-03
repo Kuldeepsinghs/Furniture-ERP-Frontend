@@ -20,8 +20,15 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    const isLoginRequest = error.config?.url?.includes("/auth/login");
+
+    if (
+      !isLoginRequest &&
+      (error.response?.status === 401 || error.response?.status === 403)
+    ) {
       localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("username");
       window.dispatchEvent(
         new CustomEvent("erp:notify", {
           detail: {

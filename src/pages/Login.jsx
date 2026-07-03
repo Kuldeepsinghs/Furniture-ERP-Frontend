@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { useNotification } from "../hooks/useNotification";
 import { getErrorMessage } from "../utils/errors";
+import { getRoleFromAuth } from "../utils/auth";
 
 function Login() {
   const notification = useNotification();
@@ -24,8 +25,11 @@ function Login() {
       });
 
       localStorage.setItem("token", response.data.token);
+      const role = getRoleFromAuth(response.data);
+      localStorage.setItem("role", role);
+      localStorage.setItem("username", username);
       notification.success("Login successful.");
-      navigate("/dashboard", { replace: true });
+      navigate(role === "SALES" ? "/sales/dashboard" : "/dashboard", { replace: true });
     } catch (error) {
       const message = getErrorMessage(error, "Login failed. Check your credentials.");
       setError(message);

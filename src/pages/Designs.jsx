@@ -27,6 +27,11 @@ function Designs() {
         categoryId: Number(form.categoryId),
         description: form.description,
       })}
+      recordToForm={(record) => ({
+        designName: record.designName ?? record.name ?? "",
+        categoryId: String(record.category?.id ?? record.categoryId ?? ""),
+        description: record.description ?? "",
+      })}
     />
   );
 }

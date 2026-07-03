@@ -38,6 +38,12 @@ function RateTypes() {
         if (Number(form.walnutExtra) < 0) return "Walnut extra cannot be negative.";
         return "";
       }}
+      recordToForm={(record) => ({
+        name: record.name ?? "",
+        defaultCarpenterRate: record.defaultCarpenterRate ?? "",
+        defaultPolisherRate: record.defaultPolisherRate ?? "",
+        walnutExtra: record.walnutExtra ?? "",
+      })}
     />
   );
 }

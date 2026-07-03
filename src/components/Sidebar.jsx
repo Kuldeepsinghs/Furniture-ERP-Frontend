@@ -6,10 +6,14 @@ import {
   Boxes,
   ClipboardList,
   FileBarChart,
+  History,
   LayoutDashboard,
+  LogOut,
   Package,
   Palette,
+  PlusCircle,
   Settings,
+  ShoppingBag,
   Store,
   Tags,
   Truck,
@@ -17,6 +21,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
+import { getUserRole } from "../utils/auth";
 
 const sections = [
   {
@@ -56,6 +61,28 @@ const sections = [
         path: "/reports/showroom-shipments",
         icon: Boxes,
       },
+    ],
+  },
+];
+
+const salesSection = {
+  title: "Showroom Sales",
+  items: [
+    { name: "Sales Dashboard", path: "/sales/dashboard", icon: BarChart3 },
+    { name: "Sales History", path: "/sales", icon: History },
+    { name: "Add Sale", path: "/sales/add", icon: PlusCircle },
+    { name: "Sales Reports", path: "/sales/reports", icon: ShoppingBag },
+  ],
+};
+
+const salesOnlySections = [
+  {
+    title: "Sales",
+    items: [
+      { name: "Dashboard", path: "/sales/dashboard", icon: BarChart3 },
+      { name: "Add Sale", path: "/sales/add", icon: PlusCircle },
+      { name: "Sales History", path: "/sales", icon: History },
+      { name: "Sales Reports", path: "/sales/reports", icon: ShoppingBag },
     ],
   },
 ];
@@ -105,17 +132,27 @@ function SidebarSection({ section, open, onToggle, onClose }) {
 
 function Sidebar({ open, onClose }) {
   const location = useLocation();
+  const role = getUserRole();
+  const visibleSections = useMemo(
+    () =>
+      role === "SALES"
+        ? salesOnlySections
+        : role === "VIEWER"
+          ? sections
+          : [...sections, salesSection],
+    [role],
+  );
   const initialOpen = useMemo(() => {
     const state = {};
 
-    sections.forEach((section) => {
+    visibleSections.forEach((section) => {
       state[section.title] = section.items.some((item) =>
         location.pathname.startsWith(item.path)
       );
     });
 
     return state;
-  }, [location.pathname]);
+  }, [location.pathname, visibleSections]);
 
   const [openSections, setOpenSections] = useState({
     Dashboard: true,
@@ -172,7 +209,7 @@ function Sidebar({ open, onClose }) {
           </div>
 
           <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-5">
-            {sections.map((section) => (
+            {visibleSections.map((section) => (
               <SidebarSection
                 key={section.title}
                 section={section}
@@ -181,6 +218,23 @@ function Sidebar({ open, onClose }) {
                 onClose={onClose}
               />
             ))}
+            {role === "SALES" && (
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem("token");
+                  localStorage.removeItem("role");
+                  localStorage.removeItem("username");
+                  window.location.href = "/";
+                }}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/10 hover:text-white"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white/10">
+                  <LogOut size={17} strokeWidth={2.2} />
+                </span>
+                Logout
+              </button>
+            )}
           </nav>
         </div>
       </aside>

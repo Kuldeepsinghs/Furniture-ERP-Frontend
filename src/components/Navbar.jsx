@@ -20,6 +20,10 @@ const titles = {
   "/reports/production": "Production Report",
   "/reports/shipments": "Shipment Report",
   "/reports/showroom-shipments": "Showroom Shipment History",
+  "/sales/dashboard": "Sales Dashboard",
+  "/sales": "Sales History",
+  "/sales/add": "Add Sale",
+  "/sales/reports": "Sales Reports",
 };
 
 function Navbar({ onMenuClick }) {
@@ -28,6 +32,8 @@ function Navbar({ onMenuClick }) {
 
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("username");
     navigate("/");
   };
 

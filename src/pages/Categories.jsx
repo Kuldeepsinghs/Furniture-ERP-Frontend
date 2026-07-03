@@ -17,6 +17,10 @@ function Categories() {
         { key: "name", header: "Category" },
         { key: "description", header: "Description" },
       ]}
+      recordToForm={(record) => ({
+        name: record.name ?? "",
+        description: record.description ?? "",
+      })}
     />
   );
 }

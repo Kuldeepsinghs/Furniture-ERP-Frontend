@@ -46,7 +46,7 @@ function ProductRates() {
         carpenterRateOverride: form.carpenterRateOverride === "" ? null : Number(form.carpenterRateOverride),
         polisherRateOverride: form.polisherRateOverride === "" ? null : Number(form.polisherRateOverride),
       })}
-      validate={(form, { records }) => {
+      validate={(form, { records, editingRecord }) => {
         if (form.carpenterRateOverride !== "" && Number(form.carpenterRateOverride) <= 0) {
           return "Amount must be greater than zero.";
         }
@@ -58,6 +58,7 @@ function ProductRates() {
         }
 
         const exists = records.some((record) => {
+          if (editingRecord && record.id === editingRecord.id) return false;
           const designId = String(record.design?.id ?? record.designId ?? "");
           const rateTypeId = String(record.rateType?.id ?? record.rateTypeId ?? "");
 
@@ -66,6 +67,12 @@ function ProductRates() {
 
         return exists ? "This Design + Rate Type combination already exists." : "";
       }}
+      recordToForm={(record) => ({
+        designId: String(record.design?.id ?? record.designId ?? ""),
+        rateTypeId: String(record.rateType?.id ?? record.rateTypeId ?? ""),
+        carpenterRateOverride: record.carpenterRateOverride ?? "",
+        polisherRateOverride: record.polisherRateOverride ?? "",
+      })}
     />
   );
 }

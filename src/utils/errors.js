@@ -3,13 +3,14 @@ export function getErrorMessage(error, fallback = "Unable to load data.") {
 
   const status = error?.response?.status;
 
+  const data = error?.response?.data;
+  if (data?.message) return data.message;
+  if (data?.error) return data.error;
+
   if (status === 401) return "Your session has expired. Please login again.";
   if (status === 403) return "Access denied.";
 
-  return (
-    error?.response?.data?.message ??
-    error?.response?.data?.error ??
-    error?.message ??
-    fallback
-  );
+  if (data && typeof data === "object") return Object.values(data).join(" ");
+
+  return error?.message || fallback;
 }

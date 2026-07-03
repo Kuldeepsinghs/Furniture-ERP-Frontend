@@ -20,12 +20,48 @@ import PaymentSummary from "./pages/reports/PaymentSummary";
 import ProductionReport from "./pages/reports/ProductionReport";
 import ShipmentReport from "./pages/reports/ShipmentReport";
 import ShowroomShipmentHistory from "./pages/reports/ShowroomShipmentHistory";
+import SalesDashboard from "./pages/sales/SalesDashboard";
+import SalesHistory from "./pages/sales/SalesHistory";
+import SalesForm from "./pages/sales/SalesForm";
+import SalesReports from "./pages/sales/SalesReports";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route
+          path="/sales/dashboard"
+          element={
+            <ProtectedRoute>
+              <SalesDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales"
+          element={
+            <ProtectedRoute>
+              <SalesHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales/add"
+          element={
+            <ProtectedRoute>
+              <SalesForm />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sales/reports"
+          element={
+            <ProtectedRoute>
+              <SalesReports />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={

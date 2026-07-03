@@ -5,6 +5,7 @@ import DataTable from "./DataTable";
 import LoadingSpinner from "./LoadingSpinner";
 import MainLayout from "../layouts/MainLayout";
 import { useNotification } from "../hooks/useNotification";
+import { canMutateData } from "../utils/auth";
 import { getErrorMessage } from "../utils/errors";
 import { asArray, formatCurrency, getName } from "../utils/format";
 
@@ -31,6 +32,7 @@ function MasterDataPage({
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const canEdit = canMutateData();
 
   const loadData = useCallback(async () => {
     try {
@@ -170,27 +172,29 @@ function MasterDataPage({
             </div>
           </div>
 
-          <form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {fields.map((field) => (
-              <label key={field.name} className={field.span ? field.span : undefined}>
-                <span className="field-label">{field.label}</span>
-                {renderField(field)}
-              </label>
-            ))}
-            <div className="flex items-end">
-              <button type="submit" disabled={saving} className="primary-button w-full">
-                {saving ? "Saving..." : editingRecord ? `Update ${title}` : `Add ${title}`}
-              </button>
-            </div>
-            {editingRecord && (
+          {canEdit && (
+            <form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {fields.map((field) => (
+                <label key={field.name} className={field.span ? field.span : undefined}>
+                  <span className="field-label">{field.label}</span>
+                  {renderField(field)}
+                </label>
+              ))}
               <div className="flex items-end">
-                <button type="button" onClick={cancelEdit} className="secondary-button flex w-full items-center justify-center gap-2">
-                  <X size={16} />
-                  Cancel Edit
+                <button type="submit" disabled={saving} className="primary-button w-full">
+                  {saving ? "Saving..." : editingRecord ? `Update ${title}` : `Add ${title}`}
                 </button>
               </div>
-            )}
-          </form>
+              {editingRecord && (
+                <div className="flex items-end">
+                  <button type="button" onClick={cancelEdit} className="secondary-button flex w-full items-center justify-center gap-2">
+                    <X size={16} />
+                    Cancel Edit
+                  </button>
+                </div>
+              )}
+            </form>
+          )}
 
           {infoBanner && (
             <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800">
@@ -226,30 +230,34 @@ function MasterDataPage({
                       }
                     : column
                 ),
-                {
-                  key: "actions",
-                  header: "Actions",
-                  render: (row) => (
-                    <div className="flex items-center justify-end gap-2 md:justify-start">
-                      <button
-                        type="button"
-                        onClick={() => startEdit(row)}
-                        className="rounded-lg border border-blue-200 bg-blue-50 p-2 text-blue-700 transition hover:bg-blue-100"
-                        title="Edit"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteRecord(row)}
-                        className="rounded-lg border border-red-200 bg-red-50 p-2 text-red-700 transition hover:bg-red-100"
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ),
-                },
+                ...(canEdit
+                  ? [
+                      {
+                        key: "actions",
+                        header: "Actions",
+                        render: (row) => (
+                          <div className="flex items-center justify-end gap-2 md:justify-start">
+                            <button
+                              type="button"
+                              onClick={() => startEdit(row)}
+                              className="rounded-lg border border-blue-200 bg-blue-50 p-2 text-blue-700 transition hover:bg-blue-100"
+                              title="Edit"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteRecord(row)}
+                              className="rounded-lg border border-red-200 bg-red-50 p-2 text-red-700 transition hover:bg-red-100"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        ),
+                      },
+                    ]
+                  : []),
               ]}
               data={filteredRecords}
               emptyMessage={`No ${title.toLowerCase()} found.`}
