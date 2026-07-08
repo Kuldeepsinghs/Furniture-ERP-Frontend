@@ -5,7 +5,13 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import MainLayout from "../../layouts/MainLayout";
 import { useNotification } from "../../hooks/useNotification";
 import { getErrorMessage } from "../../utils/errors";
-import { formatCurrency } from "../../utils/format";
+import { asArray, formatCurrency, getSaleDateTime } from "../../utils/format";
+import { buildRevenueBreakdown, buildRevenueTrend } from "../../utils/salesCharts";
+import {
+  BreakdownDonutChart,
+  HorizontalBarChart,
+  RevenueTrendChart,
+} from "../../components/charts/SalesCharts";
 
 const filters = [
   { key: "today", label: "Today", endpoint: "/sales/reports/today" },
@@ -15,11 +21,45 @@ const filters = [
   { key: "custom", label: "Custom", endpoint: "/sales/reports/custom" },
 ];
 
+const startOfDay = (date) => {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+};
+
+const getRangeForFilter = (filter, custom) => {
+  const now = new Date();
+  const todayStart = startOfDay(now);
+
+  if (filter === "today") {
+    return { start: todayStart, end: now };
+  }
+  if (filter === "weekly") {
+    const start = startOfDay(now);
+    start.setDate(start.getDate() - 6);
+    return { start, end: now };
+  }
+  if (filter === "monthly") {
+    return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: now };
+  }
+  if (filter === "yearly") {
+    return { start: new Date(now.getFullYear(), 0, 1), end: now };
+  }
+  if (filter === "custom" && custom.startDate && custom.endDate) {
+    const start = startOfDay(new Date(custom.startDate));
+    const end = new Date(custom.endDate);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+  return null;
+};
+
 function SalesReports() {
   const notification = useNotification();
   const [filter, setFilter] = useState("today");
   const [custom, setCustom] = useState({ startDate: "", endDate: "" });
   const [report, setReport] = useState(null);
+  const [chartSales, setChartSales] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,13 +73,34 @@ function SalesReports() {
 
       setLoading(true);
       try {
-        const response = await api.get(active.endpoint, {
-          params:
-            filter === "custom"
-              ? { startDate: custom.startDate, endDate: custom.endDate }
-              : undefined,
-        });
-        setReport(response.data);
+        const [reportResponse, salesResponse] = await Promise.all([
+          api.get(active.endpoint, {
+            params:
+              filter === "custom"
+                ? { startDate: custom.startDate, endDate: custom.endDate }
+                : undefined,
+          }),
+          api.get("/sales", {
+            params: { page: 0, size: 1000, sortBy: "saleDateTime", sortDir: "desc" },
+          }),
+        ]);
+
+        setReport(reportResponse.data);
+
+        const range = getRangeForFilter(filter, custom);
+        const allSales = asArray(salesResponse.data);
+        const inRange = range
+          ? allSales.filter((sale) => {
+              const saleDate = new Date(getSaleDateTime(sale));
+              return (
+                !Number.isNaN(saleDate.getTime()) &&
+                saleDate >= range.start &&
+                saleDate <= range.end
+              );
+            })
+          : allSales;
+
+        setChartSales(inRange);
       } catch (error) {
         notification.error(getErrorMessage(error, "Unable to Load Sales Report"));
       } finally {
@@ -49,6 +110,10 @@ function SalesReports() {
 
     loadReport();
   }, [custom.endDate, custom.startDate, filter, notification]);
+
+  const revenueTrend = buildRevenueTrend(chartSales);
+  const categoryBreakdown = buildRevenueBreakdown(chartSales, (sale) => sale.category);
+  const locationBreakdown = buildRevenueBreakdown(chartSales, (sale) => sale.location);
 
   return (
     <MainLayout>
@@ -94,13 +159,32 @@ function SalesReports() {
         {loading ? (
           <LoadingSpinner label="Loading Sales Report..." />
         ) : (
-          <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
-            <DashboardCard title="Total Revenue" value={formatCurrency(report?.totalRevenue)} tone="green" />
-            <DashboardCard title="Number of Sales" value={report?.numberOfSales ?? 0} tone="blue" />
-            <DashboardCard title="Average Sale" value={formatCurrency(report?.averageSale)} tone="amber" />
-            <DashboardCard title="Top Category" value={report?.topCategory ?? "N/A"} tone="slate" />
-            <DashboardCard title="Top Location" value={report?.topLocation ?? "N/A"} tone="blue" />
-          </section>
+          <>
+            <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+              <DashboardCard title="Total Revenue" value={formatCurrency(report?.totalRevenue)} tone="green" />
+              <DashboardCard title="Number of Sales" value={report?.numberOfSales ?? 0} tone="blue" />
+              <DashboardCard title="Average Sale" value={formatCurrency(report?.averageSale)} tone="amber" />
+              <DashboardCard title="Top Category" value={report?.topCategory ?? "N/A"} tone="slate" />
+              <DashboardCard title="Top Location" value={report?.topLocation ?? "N/A"} tone="blue" />
+            </section>
+
+            <section className="grid gap-5">
+              <RevenueTrendChart data={revenueTrend} />
+
+              <div className="grid gap-5 lg:grid-cols-2">
+                <BreakdownDonutChart
+                  title="Revenue by Category"
+                  subtitle="Share of revenue across product categories"
+                  data={categoryBreakdown}
+                />
+                <HorizontalBarChart
+                  title="Revenue by Location"
+                  subtitle="Showroom locations compared by revenue"
+                  data={locationBreakdown}
+                />
+              </div>
+            </section>
+          </>
         )}
       </div>
     </MainLayout>
