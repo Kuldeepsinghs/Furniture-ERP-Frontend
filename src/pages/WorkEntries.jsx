@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { Download } from "lucide-react";
 import api from "../api/axios";
 import DataTable from "../components/DataTable";
 import LoadingSpinner from "../components/LoadingSpinner";
 import MainLayout from "../layouts/MainLayout";
 import { useNotification } from "../hooks/useNotification";
 import { getErrorMessage } from "../utils/errors";
+import { exportToCsv } from "../utils/exportCsv";
 import {
   formatCurrency,
   formatDate,
@@ -174,6 +176,29 @@ function WorkEntries() {
     { key: "time", header: "Time", render: (entry) => formatTime(getWorkEntryDateTime(entry)) },
   ];
 
+  const exportEntries = () => {
+    if (!filteredEntries.length) {
+      notification.warning("No Work Entries to Export");
+      return;
+    }
+
+    exportToCsv(
+      `production-entries-${new Date().toISOString().slice(0, 10)}.csv`,
+      [
+        { key: "worker", header: "Worker", value: (entry) => getName(entry.worker ?? entry.workerName) },
+        { key: "design", header: "Design", value: (entry) => getName(entry.design ?? entry.designName) },
+        { key: "rateType", header: "Rate Type", value: (entry) => getName(entry.rateType ?? entry.rateTypeName) },
+        { key: "quantity", header: "Quantity", value: (entry) => entry.quantity ?? 0 },
+        { key: "finishType", header: "Finish Type", value: (entry) => entry.finishType ?? "" },
+        { key: "amount", header: "Amount", value: (entry) => entry.amount ?? 0 },
+        { key: "date", header: "Date", value: (entry) => formatDate(getWorkEntryDateTime(entry)) },
+        { key: "time", header: "Time", value: (entry) => formatTime(getWorkEntryDateTime(entry)) },
+        { key: "remarks", header: "Remarks", value: (entry) => entry.remarks || "" },
+      ],
+      filteredEntries,
+    );
+  };
+
   const filteredEntries = sortByDateTimeDesc(entries.filter((entry) => {
     const workerId = String(entry.worker?.id ?? entry.workerId ?? "");
     const rateTypeId = String(entry.rateType?.id ?? entry.rateTypeId ?? "");
@@ -318,9 +343,19 @@ function WorkEntries() {
 
         <section className="space-y-4">
           <div className="flex flex-col gap-3 xl:max-w-6xl">
-            <div>
-              <h3 className="text-lg font-bold text-slate-950">Recent Entries</h3>
-              <p className="text-sm text-slate-500">Compact production records without raw nested JSON.</p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-slate-950">Recent Entries</h3>
+                <p className="text-sm text-slate-500">Compact production records without raw nested JSON.</p>
+              </div>
+              <button
+                type="button"
+                onClick={exportEntries}
+                className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+              >
+                <Download size={16} />
+                Export CSV
+              </button>
             </div>
             <div className="grid gap-3 md:grid-cols-3">
               <input
