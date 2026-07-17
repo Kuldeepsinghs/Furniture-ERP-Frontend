@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PlusCircle, Trash2 } from "lucide-react";
 import api from "../../api/axios";
 import MainLayout from "../../layouts/MainLayout";
 import { useNotification } from "../../hooks/useNotification";
 import { getErrorMessage } from "../../utils/errors";
 import { toBackendDateTime } from "../../utils/dateInput";
-import { formatCurrency } from "../../utils/format";
+import { asArray, formatCurrency } from "../../utils/format";
 import {
   buildSalePayload,
   emptySaleForm,
@@ -13,11 +13,12 @@ import {
   validateSaleForm,
 } from "../../utils/sales";
 
-function ProductRows({ products, onChange, onAdd, onRemove }) {
+function ProductRows({ products, categories, onChange, onAdd, onRemove }) {
   return (
     <div className="space-y-3">
-      <div className="hidden rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 md:grid md:grid-cols-[1.4fr_0.7fr_0.9fr_auto] md:gap-3">
+      <div className="hidden rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-500 md:grid md:grid-cols-[1.2fr_1fr_0.7fr_0.9fr_auto] md:gap-3">
         <span>Product Name</span>
+        <span>Category</span>
         <span>Quantity</span>
         <span>Price</span>
         <span className="sr-only">Action</span>
@@ -26,7 +27,7 @@ function ProductRows({ products, onChange, onAdd, onRemove }) {
       {products.map((product, index) => (
         <div
           key={index}
-          className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-[1.4fr_0.7fr_0.9fr_auto] md:items-end"
+          className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:grid-cols-[1.2fr_1fr_0.7fr_0.9fr_auto] md:items-end"
         >
           <label>
             <span className="field-label md:hidden">Product Name</span>
@@ -37,6 +38,22 @@ function ProductRows({ products, onChange, onAdd, onRemove }) {
               placeholder="Bahubali Sofa"
               required
             />
+          </label>
+          <label>
+            <span className="field-label md:hidden">Category</span>
+            <select
+              className="field-input"
+              value={product.category}
+              onChange={(event) => onChange(index, "category", event.target.value)}
+              required
+            >
+              <option value="">Select category</option>
+              {categories.map((category) => (
+                <option key={category.id ?? category.name} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             <span className="field-label md:hidden">Quantity</span>
@@ -89,8 +106,23 @@ function ProductRows({ products, onChange, onAdd, onRemove }) {
 function SalesForm() {
   const notification = useNotification();
   const [form, setForm] = useState(emptySaleForm);
+  const [categories, setCategories] = useState([]);
   const [savedTotal, setSavedTotal] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await api.get("/categories");
+        setCategories(asArray(response.data).filter((category) => category.active !== false));
+      } catch (error) {
+        notification.error(getErrorMessage(error, "Unable to Load Categories"));
+      }
+    };
+
+    loadCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const updateField = (name, value) => {
     setForm((current) => ({ ...current, [name]: value }));
@@ -181,16 +213,6 @@ function SalesForm() {
                 />
               </label>
               <label>
-                <span className="field-label">Category</span>
-                <input
-                  className="field-input"
-                  value={form.category}
-                  onChange={(event) => updateField("category", event.target.value)}
-                  placeholder="Sofa, Bed, Table"
-                  required
-                />
-              </label>
-              <label>
                 <span className="field-label">Location</span>
                 <input
                   className="field-input"
@@ -221,11 +243,14 @@ function SalesForm() {
               <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <h4 className="text-base font-bold text-slate-950">Products</h4>
-                  <p className="text-sm text-slate-500">Add as many showroom sale products as needed.</p>
+                  <p className="text-sm text-slate-500">
+                    Add each item with its own category - a sale can mix categories (e.g. a sofa and a cot).
+                  </p>
                 </div>
               </div>
               <ProductRows
                 products={form.products}
+                categories={categories}
                 onChange={updateProduct}
                 onAdd={addProduct}
                 onRemove={removeProduct}

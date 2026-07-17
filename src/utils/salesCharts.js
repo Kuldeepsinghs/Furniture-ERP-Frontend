@@ -50,6 +50,44 @@ export const buildRevenueTrend = (sales) => {
 };
 
 /**
+ * Groups revenue by product category, at the product-line level (not the
+ * whole-sale level) - a single sale can mix categories (e.g. a sofa and a
+ * cot), so each product line contributes only its own price*quantity to
+ * its own category, matching how the backend's dashboard/report
+ * aggregation works. Category matching is case-insensitive to tolerate any
+ * older free-text data.
+ */
+export const buildProductCategoryBreakdown = (sales, maxSlices = 6) => {
+  const totals = new Map();
+  const labels = new Map();
+
+  sales.forEach((sale) => {
+    const products = Array.isArray(sale.products) ? sale.products : [];
+
+    products.forEach((product) => {
+      const rawCategory = (product.category || "Unspecified").trim();
+      const key = rawCategory.toLowerCase();
+      const lineTotal = Number(product.price ?? 0) * Number(product.quantity ?? 0);
+
+      totals.set(key, (totals.get(key) ?? 0) + lineTotal);
+      if (!labels.has(key)) labels.set(key, rawCategory);
+    });
+  });
+
+  const sorted = [...totals.entries()]
+    .filter(([, value]) => value > 0)
+    .sort((a, b) => b[1] - a[1])
+    .map(([key, value]) => ({ label: labels.get(key), value }));
+
+  if (sorted.length <= maxSlices) return sorted;
+
+  const top = sorted.slice(0, maxSlices - 1);
+  const otherTotal = sorted.slice(maxSlices - 1).reduce((sum, entry) => sum + entry.value, 0);
+
+  return [...top, { label: "Other", value: otherTotal }];
+};
+
+/**
  * Groups sales revenue by an arbitrary field (category, location, ...),
  * sorted descending, with the smallest entries folded into "Other" so the
  * chart stays readable.

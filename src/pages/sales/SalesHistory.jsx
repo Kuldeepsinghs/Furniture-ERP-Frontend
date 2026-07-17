@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { Eye, Pencil, PlusCircle, Trash2, X } from "lucide-react";
+import { Download, Eye, Pencil, PlusCircle, Trash2, X } from "lucide-react";
 import api from "../../api/axios";
 import DataTable from "../../components/DataTable";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import MainLayout from "../../layouts/MainLayout";
 import { useNotification } from "../../hooks/useNotification";
 import { getErrorMessage } from "../../utils/errors";
+import { exportToCsv } from "../../utils/exportCsv";
 import { toBackendDateTime, toDateTimeLocalValue } from "../../utils/dateInput";
 import {
   asArray,
@@ -32,6 +33,7 @@ function ProductsTable({ products }) {
         <thead className="bg-slate-50">
           <tr>
             <th className="px-4 py-3 text-left font-bold text-slate-600">Product Name</th>
+            <th className="px-4 py-3 text-left font-bold text-slate-600">Category</th>
             <th className="px-4 py-3 text-left font-bold text-slate-600">Quantity</th>
             <th className="px-4 py-3 text-left font-bold text-slate-600">Price</th>
           </tr>
@@ -43,13 +45,14 @@ function ProductsTable({ products }) {
                 <td className="px-4 py-3 font-medium text-slate-900">
                   {product.productName || "N/A"}
                 </td>
+                <td className="px-4 py-3 text-slate-700">{product.category || "N/A"}</td>
                 <td className="px-4 py-3 text-slate-700">{product.quantity ?? "N/A"}</td>
                 <td className="px-4 py-3 text-slate-700">{formatCurrency(product.price)}</td>
               </tr>
             ))
           ) : (
             <tr>
-              <td colSpan="3" className="px-4 py-8 text-center text-sm text-slate-500">
+              <td colSpan="4" className="px-4 py-8 text-center text-sm text-slate-500">
                 No products available.
               </td>
             </tr>
@@ -60,13 +63,13 @@ function ProductsTable({ products }) {
   );
 }
 
-function EditableProducts({ products, onChange, onAdd, onRemove }) {
+function EditableProducts({ products, categories, onChange, onAdd, onRemove }) {
   return (
     <div className="space-y-3">
       {products.map((product, index) => (
         <div
           key={index}
-          className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1.4fr_0.7fr_0.9fr_auto] md:items-end"
+          className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1.2fr_1fr_0.7fr_0.9fr_auto] md:items-end"
         >
           <label>
             <span className="field-label">Product Name</span>
@@ -76,6 +79,22 @@ function EditableProducts({ products, onChange, onAdd, onRemove }) {
               onChange={(event) => onChange(index, "productName", event.target.value)}
               required
             />
+          </label>
+          <label>
+            <span className="field-label">Category</span>
+            <select
+              className="field-input"
+              value={product.category}
+              onChange={(event) => onChange(index, "category", event.target.value)}
+              required
+            >
+              <option value="">Select category</option>
+              {categories.map((category) => (
+                <option key={category.id ?? category.name} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             <span className="field-label">Quantity</span>
@@ -123,7 +142,7 @@ function EditableProducts({ products, onChange, onAdd, onRemove }) {
   );
 }
 
-function SaleModal({ mode, sale, form, setForm, onClose, onSave, saving }) {
+function SaleModal({ mode, sale, form, setForm, categories, onClose, onSave, saving }) {
   if (!sale) return null;
 
   const readonly = mode === "view";
@@ -246,15 +265,6 @@ function SaleModal({ mode, sale, form, setForm, onClose, onSave, saving }) {
                 />
               </label>
               <label>
-                <span className="field-label">Category</span>
-                <input
-                  className="field-input"
-                  value={form.category}
-                  onChange={(event) => setForm({ ...form, category: event.target.value })}
-                  required
-                />
-              </label>
-              <label>
                 <span className="field-label">Location</span>
                 <input
                   className="field-input"
@@ -282,6 +292,7 @@ function SaleModal({ mode, sale, form, setForm, onClose, onSave, saving }) {
 
             <EditableProducts
               products={form.products}
+              categories={categories}
               onChange={updateProduct}
               onAdd={addProduct}
               onRemove={removeProduct}
@@ -314,14 +325,30 @@ function SaleModal({ mode, sale, form, setForm, onClose, onSave, saving }) {
 function SalesHistory() {
   const notification = useNotification();
   const [sales, setSales] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [meta, setMeta] = useState({ page: 0, size: 10, totalPages: 0, totalElements: 0 });
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("saleDateTime");
   const [sortDir, setSortDir] = useState("desc");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [modal, setModal] = useState({ mode: "", sale: null });
   const [editForm, setEditForm] = useState(emptySaleForm);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await api.get("/categories");
+        setCategories(asArray(response.data).filter((category) => category.active !== false));
+      } catch (error) {
+        notification.error(getErrorMessage(error, "Unable to Load Categories"));
+      }
+    };
+
+    loadCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadSales = useCallback(async (page = 0) => {
     setLoading(true);
@@ -401,6 +428,59 @@ function SalesHistory() {
     }
   };
 
+  const exportSales = async () => {
+    setExporting(true);
+    try {
+      // Export honors the current search/sort, but ignores pagination so
+      // the whole matching result set is included, not just this page.
+      const response = await api.get("/sales", {
+        params: {
+          page: 0,
+          size: 5000,
+          sortBy,
+          sortDir,
+          search: search || undefined,
+        },
+      });
+
+      const allSales = sortByDateTimeDesc(asArray(response.data), (sale) => getSaleDateTime(sale));
+
+      if (!allSales.length) {
+        notification.warning("No Sales to Export");
+        return;
+      }
+
+      exportToCsv(
+        `sales-history-${new Date().toISOString().slice(0, 10)}.csv`,
+        [
+          {
+            key: "dateTime",
+            header: "Sale Date & Time",
+            value: (sale) => {
+              const value = getSaleDateTime(sale);
+              return `${formatDate(value)} ${formatTime(value)}`;
+            },
+          },
+          { key: "customerName", header: "Customer" },
+          { key: "customerPhone", header: "Phone" },
+          { key: "category", header: "Category" },
+          { key: "location", header: "Location" },
+          { key: "products", header: "Number of Products", value: (sale) => getSaleProductCount(sale) },
+          { key: "totalAmount", header: "Total Amount", value: (sale) => sale.totalAmount ?? 0 },
+          { key: "createdBy", header: "Created By" },
+          { key: "remarks", header: "Remarks" },
+        ],
+        allSales,
+      );
+
+      notification.success(`Exported ${allSales.length} Sales`);
+    } catch (error) {
+      notification.error(getErrorMessage(error, "Unable to Export Sales"));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const columns = [
     {
       key: "dateTime",
@@ -436,7 +516,7 @@ function SalesHistory() {
     <MainLayout>
       <div className="page-stack">
         <section className="section-card">
-          <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto] lg:items-end">
+          <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto_auto] lg:items-end">
             <div>
               <h3 className="page-heading">Sales History</h3>
               <p className="muted-text mt-1">Search, sort, view, edit, and soft-delete showroom sales.</p>
@@ -461,6 +541,15 @@ function SalesHistory() {
                 <option value="asc">Oldest</option>
               </select>
             </div>
+            <button
+              type="button"
+              onClick={exportSales}
+              disabled={exporting}
+              className="secondary-button inline-flex items-center justify-center gap-2 whitespace-nowrap"
+            >
+              <Download size={16} />
+              {exporting ? "Exporting..." : "Export CSV"}
+            </button>
           </div>
         </section>
 
@@ -485,6 +574,7 @@ function SalesHistory() {
           sale={modal.sale}
           form={editForm}
           setForm={setEditForm}
+          categories={categories}
           onClose={closeModal}
           onSave={updateSale}
           saving={saving}

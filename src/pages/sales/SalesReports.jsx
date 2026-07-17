@@ -6,7 +6,7 @@ import MainLayout from "../../layouts/MainLayout";
 import { useNotification } from "../../hooks/useNotification";
 import { getErrorMessage } from "../../utils/errors";
 import { asArray, formatCurrency, getSaleDateTime } from "../../utils/format";
-import { buildRevenueBreakdown, buildRevenueTrend } from "../../utils/salesCharts";
+import { buildProductCategoryBreakdown, buildRevenueBreakdown, buildRevenueTrend } from "../../utils/salesCharts";
 import {
   BreakdownDonutChart,
   HorizontalBarChart,
@@ -112,7 +112,7 @@ function SalesReports() {
   }, [custom.endDate, custom.startDate, filter, notification]);
 
   const revenueTrend = buildRevenueTrend(chartSales);
-  const categoryBreakdown = buildRevenueBreakdown(chartSales, (sale) => sale.category);
+  const categoryBreakdown = buildProductCategoryBreakdown(chartSales);
   const locationBreakdown = buildRevenueBreakdown(chartSales, (sale) => sale.location);
 
   return (
